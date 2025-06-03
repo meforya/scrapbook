@@ -22,16 +22,19 @@
             perspective: 1000px;
             margin: 50px auto;
             cursor: pointer;
-            transition: transform 0.3s ease,
-                        animation 0.5s ease;
+            /* Transition for all transform properties, including custom ones */
+            transition: transform 0.3s ease, animation 0.5s ease;
             background-color: #9b59b6;
             border-radius: 10px;
             box-sizing: border-box;
-            /* Removed container shadow */
+            /* Apply gyroscope rotation as default transform */
+            transform: rotateX(var(--gyroRotateX, 0deg)) rotateY(var(--gyroRotateY, 0deg));
         }
 
         .card:hover {
-            transform: scale(1.03);
+            /* Combine hover scale with current gyroscope rotation */
+            transform: scale(1.03) rotateX(var(--gyroRotateX, 0deg)) rotateY(var(--gyroRotateY, 0deg));
+            animation: bounce 0.5s ease; /* Bounce animation on hover */
             box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
         }
 
@@ -46,9 +49,11 @@
             position: relative;
             width: 100%;
             height: 100%;
+            /* Updated transition for a snappier effect with anticipation*/
             transition: transform 0.5s cubic-bezier(0.25, 0.1, 0.25, 1);
             transform-style: preserve-3d;
             box-sizing: border-box;
+            transform-origin: center center; /* Ensure consistent rotation origin */
         }
 
         /* Do an horizontal flip when the card is clicked */
@@ -143,6 +148,37 @@
         let hoverTimeout;
         let bounceInterval;
 
+        // Gyroscope effect
+        if (window.DeviceOrientationEvent) {
+            window.addEventListener('deviceorientation', function(event) {
+                let rotateX = 0;
+                let rotateY = 0;
+
+                // Beta is the front-to-back tilt, Gamma is the left-to-right tilt
+                // Map beta (-180 to 180) and gamma (-90 to 90) to a smaller range for card rotation
+                // Adjust sensitivity as needed
+                if (event.beta !== null && event.gamma !== null) {
+                    rotateX = (event.beta / 90) * 15; // Max 15 degrees tilt
+                    rotateY = (event.gamma / 90) * 15; // Max 15 degrees tilt
+                }
+
+                card.style.setProperty('--gyroRotateX', rotateX + 'deg');
+                card.style.setProperty('--gyroRotateY', rotateY + 'deg');
+            });
+        } else {
+            console.warn('DeviceOrientationEvent not supported on this device/browser.');
+            // Note: For iOS 13+, you might need to request permission explicitly:
+            // if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+            //     DeviceOrientationEvent.requestPermission()
+            //         .then(permissionState => {
+            //             if (permissionState === 'granted') {
+            //                 window.addEventListener('deviceorientation', handleOrientation);
+            //             }
+            //         })
+            //         .catch(console.error);
+            // }
+        }
+
         card.addEventListener('mouseenter', function() {
             clearTimeout(hoverTimeout);
             clearInterval(bounceInterval);
@@ -152,14 +188,14 @@
                     card.style.animation = 'bounce 0.5s ease infinite';
                 }, 2000);
             }, 1000);
-            card.style.transform = 'scale(1.03)';
+            // The initial scale on hover is now handled by CSS :hover
         });
 
         card.addEventListener('mouseleave', function() {
             clearTimeout(hoverTimeout);
             clearInterval(bounceInterval);
-            card.style.animation = '';
-            card.style.transform = 'scale(1)';
+            card.style.animation = ''; // Stop the bounce animation
+            // The scale reset is handled by CSS when :hover is no longer active
         });
 
         card.addEventListener('click', function() {
@@ -171,3 +207,4 @@
     </script>
 </body>
 </html>
+
