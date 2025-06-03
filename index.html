@@ -14,6 +14,7 @@
 
         body {
             background-color: #9b59b6;
+            overflow: hidden; /* Prevent scrollbars from parallax/shimmer */
         }
 
         .card {
@@ -46,7 +47,7 @@
 
         /* This container holds the front and back of the card */
         .card-inner {
-            position: relative;
+            position: relative; /* Important for shimmer positioning */
             width: 100%;
             height: 100%;
             /* Updated transition for a snappier effect with anticipation*/
@@ -78,6 +79,7 @@
             border: 0;
             animation: border-glow 8s linear infinite;
             box-sizing: border-box;
+            overflow: hidden; /* Crucial to contain shimmer within the face */
         }
 
         @keyframes border-glow {
@@ -113,6 +115,7 @@
             height: 100%;
             width: 100%;
             color: white;
+            position: relative;
         }
 
         /* Style the back face - blue */
@@ -128,17 +131,41 @@
           padding: 10px;
           text-align: center;
         }
+
+        /* Shimmer Overlay Styles */
+        .shimmer-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            /* Angled gradient for the shine effect */
+            background: linear-gradient(
+                45deg,
+                rgba(255, 255, 255, 0) 0%,
+                rgba(255, 255, 255, 0.1) 45%, /* Subtle shine */
+                rgba(255, 255, 255, 0.4) 50%, /* Brightest part of shine */
+                rgba(255, 255, 255, 0.1) 55%,
+                rgba(255, 255, 255, 0) 100%
+            );
+            background-size: 200% 100%; /* Make gradient wider to allow movement */
+            background-position: var(--shimmer-pos, 0% 0%); /* Controlled by JS */
+            opacity: var(--shimmer-opacity, 0); /* Controlled by JS */
+            transition: opacity 0.3s ease, background-position 0.1s linear; /* Smooth fade and movement */
+            pointer-events: none; /* Allows clicks to pass through */
+            z-index: 2; /* Above card content */
+            border-radius: inherit; /* Inherit border-radius from card-face */
+        }
     </style>
 </head>
 <body>
     <div class="card" id="myCard">
         <div class="card-inner">
             <div class="card-face card-front">
-                
-                <p></p>
+                <div class="shimmer-overlay"></div>
             </div>
             <div class="card-face card-back">
-              <p></p>
+                <div class="shimmer-overlay"></div>
             </div>
         </div>
     </div>
@@ -158,12 +185,34 @@
                 // Map beta (-180 to 180) and gamma (-90 to 90) to a smaller range for card rotation
                 // Adjust sensitivity as needed
                 if (event.beta !== null && event.gamma !== null) {
-                    rotateX = (event.beta / 90) * 30; // Max 15 degrees tilt
-                    rotateY = (event.gamma / 90) * 30; // Max 15 degrees tilt
+                    rotateX = (event.beta / 90) * 15; // Max 15 degrees tilt
+                    rotateY = (event.gamma / 90) * 15; // Max 15 degrees tilt
                 }
 
                 card.style.setProperty('--gyroRotateX', rotateX + 'deg');
                 card.style.setProperty('--gyroRotateY', rotateY + 'deg');
+
+                // Shimmer effect based on gyroscope
+                const shimmerOverlayFront = card.querySelector('.card-front .shimmer-overlay');
+                const shimmerOverlayBack = card.querySelector('.card-back .shimmer-overlay');
+
+                if (shimmerOverlayFront && shimmerOverlayBack) {
+                    // Calculate shimmer position based on gamma (left-right tilt)
+                    // Map gamma from -90 to 90 to a background-position-x from 100% to 0%
+                    // -90deg (left tilt) -> 100% (shimmer starts on left)
+                    // 0deg (no tilt) -> 50% (shimmer in middle)
+                    // 90deg (right tilt) -> 0% (shimmer ends on right)
+                    const shimmerX = (event.gamma + 90) / 180 * 100; // Value from 0 to 100
+
+                    shimmerOverlayFront.style.setProperty('--shimmer-pos', shimmerX + '% 0%');
+                    shimmerOverlayBack.style.setProperty('--shimmer-pos', shimmerX + '% 0%');
+
+                    // Control shimmer opacity based on tilt magnitude
+                    // Only show shimmer when there's significant tilt
+                    const tiltMagnitude = Math.abs(event.gamma) + Math.abs(event.beta);
+                    const shimmerOpacity = Math.min(0.8, tiltMagnitude / 45); // Max opacity 0.8, adjust 45 for sensitivity
+                    card.style.setProperty('--shimmer-opacity', shimmerOpacity);
+                }
             });
         } else {
             console.warn('DeviceOrientationEvent not supported on this device/browser.');
@@ -188,14 +237,17 @@
                     card.style.animation = 'bounce 0.5s ease infinite';
                 }, 2000);
             }, 1000);
-            // The initial scale on hover is now handled by CSS :hover
+            card.style.transform = 'scale(1.03)';
         });
 
         card.addEventListener('mouseleave', function() {
             clearTimeout(hoverTimeout);
             clearInterval(bounceInterval);
             card.style.animation = ''; // Stop the bounce animation
-            // The scale reset is handled by CSS when :hover is no longer active
+            card.style.transform = 'scale(1)';
+
+            // Reset shimmer opacity on mouse leave
+            card.style.setProperty('--shimmer-opacity', '0');
         });
 
         card.addEventListener('click', function() {
@@ -203,8 +255,9 @@
             clearInterval(bounceInterval);
             card.style.animation = '';
             card.classList.toggle('flipped');
+            // Reset shimmer opacity on click
+            card.style.setProperty('--shimmer-opacity', '0');
         });
     </script>
 </body>
 </html>
-
