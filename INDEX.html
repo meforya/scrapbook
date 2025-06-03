@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Card Flip Animation</title>
+    <style>
+        /* CSS Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #9b59b6;
+        }
+
+        .card {
+            width: 316px;
+            height: 400px;
+            perspective: 1000px;
+            margin: 50px auto;
+            cursor: pointer;
+            transition: transform 0.3s ease,
+                        animation 0.5s ease;
+            background-color: #9b59b6;
+            border-radius: 10px;
+            box-sizing: border-box;
+            /* Removed container shadow */
+        }
+
+        .card:hover {
+            transform: scale(1.03);
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        @keyframes bounce {
+            0% { transform: scale(1.03); }
+            50% { transform: scale(1.06); }
+            100% { transform: scale(1.03); }
+        }
+
+        /* This container holds the front and back of the card */
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.5s cubic-bezier(0.25, 0.1, 0.25, 1);
+            transform-style: preserve-3d;
+            box-sizing: border-box;
+        }
+
+        /* Do an horizontal flip when the card is clicked */
+        .card.flipped .card-inner {
+            transform: rotateY(180deg);
+            box-shadow: none; /* Remove shadow during flip */
+        }
+
+        /* Style the front and back of the card */
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 10px;
+            font-size: 24px;
+            box-sizing: border-box;
+            border: 0;
+            animation: border-glow 8s linear infinite;
+            box-sizing: border-box;
+        }
+
+        @keyframes border-glow {
+            0% {
+                box-shadow: 0 0 0 0 rgba(255, 255, 0, 0);
+                border-color: rgba(255, 255, 0, 0);
+            }
+            25% {
+                box-shadow: 0px 0px 8px 2px rgba(255, 255, 0, 0.9),
+                            0px 0px 15px 2px rgba(255, 255, 255, 0.6);
+                border-color:  rgba(255, 255, 0, 1);
+            }
+            50% {
+                box-shadow: 0 0 0 0 rgba(255, 255, 0, 0);
+                border-color: rgba(255, 255, 0, 0);
+            }
+            75% {
+                box-shadow: 0px 0px 8px 2px rgba(255, 255, 0, 0.9),
+                            0px 0px 15px 2px rgba(255, 255, 255, 0.6);
+                border-color:  rgba(255, 255, 0, 1);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(255, 255, 0, 0);
+                border-color: rgba(255, 255, 0, 0);
+            }
+        }
+
+        /* Style the front face - green */
+        .card-front {
+            background-image: url(https://static.wixstatic.com/media/9ba0fd_91d1432a0afe415f8e5171d3ce748c28~mv2.png);
+            background-size: cover;
+            background-position: center;
+            height: 100%;
+            width: 100%;
+            color: white;
+        }
+
+        /* Style the back face - blue */
+        .card-back {
+            background-image: url(https://static.wixstatic.com/media/9ba0fd_4d3c5d55d9af4cb1ac4e7e1ec7a7d402~mv2.png); /* Updated image URL */
+            background-size: cover;
+            background-position: center;
+            color: white;
+            transform: rotateY(180deg);
+        }
+        .card-title{
+          font-size: 16px;
+          padding: 10px;
+          text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="card" id="myCard">
+        <div class="card-inner">
+            <div class="card-face card-front">
+                
+                <p></p>
+            </div>
+            <div class="card-face card-back">
+              <p></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const card = document.getElementById('myCard');
+        let hoverTimeout;
+        let bounceInterval;
+
+        card.addEventListener('mouseenter', function() {
+            clearTimeout(hoverTimeout);
+            clearInterval(bounceInterval);
+            hoverTimeout = setTimeout(() => {
+                card.style.animation = 'bounce 0.5s ease infinite';
+                bounceInterval = setInterval(() => {
+                    card.style.animation = 'bounce 0.5s ease infinite';
+                }, 2000);
+            }, 1000);
+            card.style.transform = 'scale(1.03)';
+        });
+
+        card.addEventListener('mouseleave', function() {
+            clearTimeout(hoverTimeout);
+            clearInterval(bounceInterval);
+            card.style.animation = '';
+            card.style.transform = 'scale(1)';
+        });
+
+        card.addEventListener('click', function() {
+            clearTimeout(hoverTimeout);
+            clearInterval(bounceInterval);
+            card.style.animation = '';
+            card.classList.toggle('flipped');
+        });
+    </script>
+</body>
+</html>
