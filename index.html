@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Card Flip Animation</title>
     <style>
-        /* CSS Reset */
         * {
             margin: 0;
             padding: 0;
@@ -14,7 +13,6 @@
 
         body {
             background-color: #9b59b6;
-            overflow: hidden; /* Prevent scrollbars from parallax/shimmer */
         }
 
         .card {
@@ -23,19 +21,48 @@
             perspective: 1000px;
             margin: 50px auto;
             cursor: pointer;
-            /* Transition for all transform properties, including custom ones */
             transition: transform 0.3s ease, animation 0.5s ease;
             background-color: #9b59b6;
             border-radius: 10px;
             box-sizing: border-box;
-            /* Apply gyroscope rotation as default transform */
             transform: rotateX(var(--gyroRotateX, 0deg)) rotateY(var(--gyroRotateY, 0deg));
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                120deg,
+                rgba(255, 255, 255, 0) 0%,
+                rgba(255, 255, 255, 0.35) 50%,
+                rgba(255, 255, 255, 0) 100%
+            );
+            transform: translateX(calc(var(--gyroRotateY, 0deg) * 2));
+            animation: shimmer 3s infinite;
+            pointer-events: none;
+        }
+
+        @keyframes shimmer {
+            0% {
+                left: -100%;
+            }
+            50% {
+                left: 100%;
+            }
+            100% {
+                left: 100%;
+            }
         }
 
         .card:hover {
-            /* Combine hover scale with current gyroscope rotation */
             transform: scale(1.03) rotateX(var(--gyroRotateX, 0deg)) rotateY(var(--gyroRotateY, 0deg));
-            animation: bounce 0.5s ease; /* Bounce animation on hover */
+            animation: bounce 0.5s ease;
             box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
         }
 
@@ -45,25 +72,21 @@
             100% { transform: scale(1.03); }
         }
 
-        /* This container holds the front and back of the card */
         .card-inner {
-            position: relative; /* Important for shimmer positioning */
+            position: relative;
             width: 100%;
             height: 100%;
-            /* Updated transition for a snappier effect with anticipation*/
             transition: transform 0.5s cubic-bezier(0.25, 0.1, 0.25, 1);
             transform-style: preserve-3d;
             box-sizing: border-box;
-            transform-origin: center; /* Ensure consistent rotation origin */
+            transform-origin: center center;
         }
 
-        /* Do an horizontal flip when the card is clicked */
         .card.flipped .card-inner {
             transform: rotateY(180deg);
-            box-shadow: none; /* Remove shadow during flip */
+            box-shadow: none;
         }
 
-        /* Style the front and back of the card */
         .card-face {
             position: absolute;
             width: 100%;
@@ -78,8 +101,6 @@
             box-sizing: border-box;
             border: 0;
             animation: border-glow 8s linear infinite;
-            box-sizing: border-box;
-            overflow: hidden; /* Crucial to contain shimmer within the face */
         }
 
         @keyframes border-glow {
@@ -107,7 +128,6 @@
             }
         }
 
-        /* Style the front face - green */
         .card-front {
             background-image: url(https://static.wixstatic.com/media/9ba0fd_91d1432a0afe415f8e5171d3ce748c28~mv2.png);
             background-size: cover;
@@ -115,46 +135,20 @@
             height: 100%;
             width: 100%;
             color: white;
-            position: relative;
         }
 
-        /* Style the back face - blue */
         .card-back {
-            background-image: url(https://static.wixstatic.com/media/9ba0fd_4d3c5d55d9af4cb1ac4e7e1ec7a7d402~mv2.png); /* Updated image URL */
+            background-image: url(https://static.wixstatic.com/media/9ba0fd_4d3c5d55d9af4cb1ac4e7e1ec7a7d402~mv2.png);
             background-size: cover;
             background-position: center;
             color: white;
             transform: rotateY(180deg);
         }
+
         .card-title{
           font-size: 16px;
           padding: 10px;
           text-align: center;
-        }
-
-        /* Shimmer Overlay Styles */
-        .shimmer-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            /* Angled gradient for the shine effect */
-            background: linear-gradient(
-                45deg,
-                rgba(255, 255, 255, 0) 0%,
-                rgba(255, 255, 255, 0.1) 45%, /* Subtle shine */
-                rgba(255, 255, 255, 0.4) 50%, /* Brightest part of shine */
-                rgba(255, 255, 255, 0.1) 55%,
-                rgba(255, 255, 255, 0) 100%
-            );
-            background-size: 200% 100%; /* Make gradient wider to allow movement */
-            background-position: var(--shimmer-pos, 0% 0%); /* Controlled by JS */
-            opacity: var(--shimmer-opacity, 0); /* Controlled by JS */
-            transition: opacity 0.3s ease, background-position 0.1s linear; /* Smooth fade and movement */
-            pointer-events: none; /* Allows clicks to pass through */
-            z-index: 2; /* Above card content */
-            border-radius: inherit; /* Inherit border-radius from card-face */
         }
     </style>
 </head>
@@ -162,10 +156,10 @@
     <div class="card" id="myCard">
         <div class="card-inner">
             <div class="card-face card-front">
-                <div class="shimmer-overlay"></div>
+                <p></p>
             </div>
             <div class="card-face card-back">
-                <div class="shimmer-overlay"></div>
+              <p></p>
             </div>
         </div>
     </div>
@@ -175,57 +169,21 @@
         let hoverTimeout;
         let bounceInterval;
 
-        // Gyroscope effect
         if (window.DeviceOrientationEvent) {
             window.addEventListener('deviceorientation', function(event) {
                 let rotateX = 0;
                 let rotateY = 0;
 
-                // Beta is the front-to-back tilt, Gamma is the left-to-right tilt
-                // Map beta (-180 to 180) and gamma (-90 to 90) to a smaller range for card rotation
-                // Adjust sensitivity as needed
                 if (event.beta !== null && event.gamma !== null) {
-                    rotateX = (event.beta / 90) * 15; // Max 15 degrees tilt
-                    rotateY = (event.gamma / 90) * 15; // Max 15 degrees tilt
+                    rotateX = (event.beta / 90) * 15;
+                    rotateY = (event.gamma / 90) * 15;
                 }
 
                 card.style.setProperty('--gyroRotateX', rotateX + 'deg');
                 card.style.setProperty('--gyroRotateY', rotateY + 'deg');
-
-                // Shimmer effect based on gyroscope
-                const shimmerOverlayFront = card.querySelector('.card-front .shimmer-overlay');
-                const shimmerOverlayBack = card.querySelector('.card-back .shimmer-overlay');
-
-                if (shimmerOverlayFront && shimmerOverlayBack) {
-                    // Calculate shimmer position based on gamma (left-right tilt)
-                    // Map gamma from -90 to 90 to a background-position-x from 100% to 0%
-                    // -90deg (left tilt) -> 100% (shimmer starts on left)
-                    // 0deg (no tilt) -> 50% (shimmer in middle)
-                    // 90deg (right tilt) -> 0% (shimmer ends on right)
-                    const shimmerX = (event.gamma + 90) / 180 * 100; // Value from 0 to 100
-
-                    shimmerOverlayFront.style.setProperty('--shimmer-pos', shimmerX + '% 0%');
-                    shimmerOverlayBack.style.setProperty('--shimmer-pos', shimmerX + '% 0%');
-
-                    // Control shimmer opacity based on tilt magnitude
-                    // Only show shimmer when there's significant tilt
-                    const tiltMagnitude = Math.abs(event.gamma) + Math.abs(event.beta);
-                    const shimmerOpacity = Math.min(0.8, tiltMagnitude / 45); // Max opacity 0.8, adjust 45 for sensitivity
-                    card.style.setProperty('--shimmer-opacity', shimmerOpacity);
-                }
             });
         } else {
             console.warn('DeviceOrientationEvent not supported on this device/browser.');
-            // Note: For iOS 13+, you might need to request permission explicitly:
-            // if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-            //     DeviceOrientationEvent.requestPermission()
-            //         .then(permissionState => {
-            //             if (permissionState === 'granted') {
-            //                 window.addEventListener('deviceorientation', handleOrientation);
-            //             }
-            //         })
-            //         .catch(console.error);
-            // }
         }
 
         card.addEventListener('mouseenter', function() {
@@ -237,17 +195,12 @@
                     card.style.animation = 'bounce 0.5s ease infinite';
                 }, 2000);
             }, 1000);
-            card.style.transform = 'scale(1.03)';
         });
 
         card.addEventListener('mouseleave', function() {
             clearTimeout(hoverTimeout);
             clearInterval(bounceInterval);
-            card.style.animation = ''; // Stop the bounce animation
-            card.style.transform = 'scale(1)';
-
-            // Reset shimmer opacity on mouse leave
-            card.style.setProperty('--shimmer-opacity', '0');
+            card.style.animation = '';
         });
 
         card.addEventListener('click', function() {
@@ -255,8 +208,6 @@
             clearInterval(bounceInterval);
             card.style.animation = '';
             card.classList.toggle('flipped');
-            // Reset shimmer opacity on click
-            card.style.setProperty('--shimmer-opacity', '0');
         });
     </script>
 </body>
