@@ -158,8 +158,8 @@
                 // Map beta (-180 to 180) and gamma (-90 to 90) to a smaller range for card rotation
                 // Adjust sensitivity as needed
                 if (event.beta !== null && event.gamma !== null) {
-                    rotateX = (event.beta / 90) * 15; // Max 15 degrees tilt
-                    rotateY = (event.gamma / 90) * 15; // Max 15 degrees tilt
+                    rotateX = (event.beta / 90) * 60; // Max 15 degrees tilt
+                    rotateY = (event.gamma / 90) * 60; // Max 15 degrees tilt
                 }
 
                 card.style.setProperty('--gyroRotateX', rotateX + 'deg');
